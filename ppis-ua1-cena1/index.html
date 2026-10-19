@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PPIS · UA1 · Cena 1 — Reunião na Secretaria de Saúde de Nova Esperança</title>
+<style>
+  :root { --navy:#1f2d5c; --ink:#18234d; --blue:#3b5ba5; --mid:#8aa0d0; --soft:#c9d6ee; --cream:#f6ecdc; --paper:#fbf5e8; --accent:#c8641e; }
+  * { box-sizing:border-box; }
+  html,body { margin:0; height:100%; background:#16224a; font-family:"Open Sans","Segoe UI",system-ui,sans-serif; color:var(--ink); }
+  body { display:grid; place-items:center; }
+  #player { position:relative; width:min(100vw,177.78vh); aspect-ratio:16/9; overflow:hidden; background:#000; user-select:none; }
+  #player:fullscreen { width:100vw; height:100vh; aspect-ratio:auto; }
+  video { position:absolute; inset:0; width:100%; height:100%; background:#000; }
+
+  /* start screen */
+  #inicio { position:absolute; inset:0; display:grid; place-items:center; background:center/cover no-repeat; z-index:8; }
+  #inicio::before { content:""; position:absolute; inset:0; background:linear-gradient(rgba(22,34,74,.15), rgba(22,34,74,.6)); }
+  #inicio .cartao { position:relative; text-align:center; color:#fff; }
+  #inicio h1 { margin:0 0 .3em; font-size:clamp(18px,2.6vw,40px); text-shadow:0 2px 12px rgba(0,0,0,.5); }
+  #inicio p { margin:0 0 1.4em; font-size:clamp(12px,1.2vw,18px); opacity:.95; text-shadow:0 1px 6px rgba(0,0,0,.6); }
+  .grande { font:inherit; font-size:clamp(13px,1.3vw,20px); font-weight:700; line-height:1; border:0; border-radius:999px; padding:.85em 1.8em; cursor:pointer; background:#fff; color:var(--ink); box-shadow:0 6px 24px rgba(0,0,0,.35); margin:.3em; display:inline-flex; align-items:center; justify-content:center; gap:.55em; }
+  .grande .ico { width:.75em; height:.85em; fill:currentColor; flex:none; }
+  .grande.laranja { background:var(--accent); color:#fff; }
+  .grande { transition:transform .18s, box-shadow .18s, background-color .18s; }
+  .grande:hover, .grande:focus-visible { transform:translateY(-2px) scale(1.04); box-shadow:0 10px 28px rgba(0,0,0,.45); outline:none; }
+  .grande:active { transform:translateY(0) scale(.98); }
+  .grande:not(.forte):not(.laranja):hover { background:#eef2fa; }
+  .grande.forte:hover { background:#2b3d78; }
+  .grande.laranja:hover { background:#de7428; }
+  .grande.forte { background:var(--navy); color:#fff; }
+
+  /* reading stop */
+  #leitura { position:absolute; left:50%; bottom:2.5%; translate:-50% 0; z-index:5; display:none; flex-direction:column; align-items:center; gap:.35em; transition:bottom .35s; }
+  #player:not(.oculto) #leitura { bottom:14%; }
+  #leitura.on { display:flex; }
+  #leitura .grande { margin:0; padding:.6em 1.6em; }
+
+  /* control bar */
+  #barra { position:absolute; left:0; right:0; bottom:0; z-index:6; padding:2.2% 2% 1.4%; background:linear-gradient(transparent, rgba(10,16,40,.85)); color:#fff; font-size:clamp(11px,1vw,15px); transition:opacity .35s; }
+  #player.oculto #barra { opacity:0; }
+  #player.oculto { cursor:none; }
+  #trilho { position:relative; height:26px; display:flex; align-items:center; gap:3px; cursor:pointer; margin-bottom:.5em; }
+  .seg { position:relative; height:6px; background:rgba(255,255,255,.3); border-radius:2px; transition:height .15s; }
+  #trilho:hover .seg { height:10px; }
+  .seg i { position:absolute; left:0; top:0; bottom:0; background:#fff; border-radius:2px; }
+  .seg.atual i { background:#ffd9b8; }
+  .marca { position:absolute; top:50%; width:26px; height:26px; translate:-50% -50%; padding:0; border-radius:50%; background:var(--accent); border:2px solid #fff; display:grid; place-items:center; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.4); z-index:1; transition:transform .15s, background-color .15s, box-shadow .15s; }
+  .marca svg { width:11px; height:12px; fill:#fff; }
+  .marca:hover, .marca:focus-visible { transform:scale(1.25); background:#de7428; box-shadow:0 2px 10px rgba(0,0,0,.5); outline:none; }
+  #dica { position:absolute; bottom:34px; translate:-50% 0; background:var(--paper); color:var(--ink); padding:.45em .8em; border-radius:8px; white-space:nowrap; font-weight:700; font-size:.92em; pointer-events:none; display:none; box-shadow:0 4px 14px rgba(0,0,0,.35); }
+  #dica small { display:block; font-weight:500; color:var(--blue); }
+  #linha { display:flex; align-items:center; gap:1em; }
+  #linha button { font:inherit; color:#fff; background:none; border:0; cursor:pointer; padding:.2em .3em; font-weight:700; }
+  #linha .tempo { font-variant-numeric:tabular-nums; opacity:.9; white-space:nowrap; }
+  #linha .cap { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:.95; }
+  .chave { display:flex; align-items:center; gap:.5em; cursor:pointer; white-space:nowrap; }
+  .chave input { display:none; }
+  .chave i { width:2.2em; height:1.2em; border-radius:999px; background:rgba(255,255,255,.3); position:relative; transition:background .2s; }
+  .chave i::after { content:""; position:absolute; top:.15em; left:.15em; width:.9em; height:.9em; border-radius:50%; background:#fff; transition:left .2s; }
+  .chave input:checked + i { background:var(--accent); }
+  .chave input:checked + i::after { left:1.15em; }
+
+  /* transcript */
+  #transcricao { position:absolute; top:3%; right:2%; bottom:22%; width:32%; z-index:5; background:rgba(251,245,232,.97); border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,.35); padding:2% 2.2%; overflow:auto; font-size:clamp(11px,1vw,16px); line-height:1.5; transform:translateX(112%); transition:transform .45s cubic-bezier(.65,0,.35,1); }
+  #transcricao.aberta { transform:none; }
+  #transcricao h2 { margin:0 0 1em; font-size:1.15em; color:var(--navy); }
+  #transcricao p { margin:0 0 .9em; cursor:pointer; }
+  #transcricao p b { display:block; font-size:.8em; letter-spacing:.06em; text-transform:uppercase; color:var(--blue); }
+  #transcricao p.agora { background:#fff; border-left:4px solid var(--accent); padding:.3em .6em; margin-left:-.6em; }
+</style>
+</head>
+<body>
+<div id="player">
+  <video id="filme" src="assets/filme.mp4" preload="auto" playsinline></video>
+
+  <div id="inicio" style="background-image:url(assets/capa.jpg)">
+    <div class="cartao">
+      <h1>Reunião na Secretaria de Saúde de Nova Esperança</h1>
+      <p>PPIS · Unidade 1 · Cena 1</p>
+      <div id="botoes-inicio"></div>
+    </div>
+  </div>
+
+  <div id="leitura" aria-live="polite"><button class="grande laranja" id="continuar">Continuar <svg class="ico" viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z"/></svg></button></div>
+
+  <aside id="transcricao" aria-label="Transcrição"></aside>
+
+  <div id="barra">
+    <div id="trilho" aria-label="Linha do tempo"><div id="dica"></div></div>
+    <div id="linha">
+      <button id="tocar" aria-label="Tocar ou pausar">▶</button>
+      <span class="tempo" id="tempo">0:00 / 0:00</span>
+      <span class="cap" id="cap"></span>
+      <label class="chave" title="Pausa o vídeo nas figuras para você ler com calma"><input type="checkbox" id="auto-pausa" checked><i></i>Pausar nas leituras</label>
+      <button id="btn-trans">Transcrição</button>
+      <button id="tela" aria-label="Tela cheia">⛶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DADOS = {"duracao": 473.067, "capitulos": [{"titulo": "A notícia e a reunião", "onde": "O jornal", "ponto": [0.527, 0.794], "ini": 0.0, "fim": 53.267, "falas": [{"quem": "Narradora", "texto": "Um jornal de grande veiculação na cidade publicou a notícia da morte de uma mulher de 34 anos, vítima de câncer de mama, que iniciou o tratamento em estágio muito avançado da doença.", "ini": 0.0, "fim": 12.833}, {"quem": "Narradora", "texto": "A matéria traz, ainda, um levantamento da Secretaria Estadual de Saúde que aponta Nova Esperança como o município com a mais elevada mortalidade por câncer de mama do estado.", "ini": 12.833, "fim": 24.067}, {"quem": "Narradora", "texto": "Diante disso, os gestores da Secretaria Municipal de Saúde se reúnem com urgência.", "ini": 24.067, "fim": 30.033}, {"quem": "Narradora", "texto": "A reunião é conduzida pelo secretário municipal de saúde, Osvaldo Ramos.", "ini": 30.033, "fim": 35.367}, {"quem": "Narradora", "texto": "Participam a diretora de saúde coletiva, Márcia Silva; o assessor de planejamento, Rogério Prado; o diretor administrativo e financeiro, Jorge Menezes; e a chefe de gabinete, Sandra Moura.", "ini": 35.367, "fim": 48.833}, {"quem": "Narradora", "texto": "Osvaldo Ramos abre a reunião retomando a repercussão do caso:", "ini": 48.833, "fim": 53.267}]}, {"titulo": "O secretário abre a reunião", "onde": "Osvaldo Ramos", "ponto": [0.485, 0.195], "ini": 53.267, "fim": 80.6, "falas": [{"quem": "Osvaldo Ramos", "texto": "Bem, pessoal, vocês já estão sabendo da repercussão das notícias do óbito da D. Maria Santinha.", "ini": 53.267, "fim": 59.6}, {"quem": "Osvaldo Ramos", "texto": "O povo está muito revoltado e todo mundo comenta que ela levou mais de seis meses para conseguir realizar uma mamografia lá na capital.", "ini": 59.6, "fim": 67.733}, {"quem": "Osvaldo Ramos", "texto": "Isto, sem falar nos meses que a coitada esteve no posto de saúde, sem que ninguém suspeitasse de um câncer de mama, apesar de ter vários casos na família.", "ini": 67.733, "fim": 77.2}, {"quem": "Osvaldo Ramos", "texto": "Tão falando até em CPI lá na Câmara de Vereadores.", "ini": 77.2, "fim": 80.6}]}, {"titulo": "A trajetória de D. Maria", "onde": "A pasta de relatórios", "ponto": [0.436, 0.677], "ini": 80.6, "fim": 104.0, "falas": [{"quem": "Narradora", "texto": "A trajetória de D. Maria Santinha pelos serviços de saúde foi mais longa do que a notícia revela. Observe cada etapa desse percurso e o tempo que se passou entre elas.", "ini": 80.6, "fim": 92.0}]}, {"titulo": "Márcia e Rogério: o mamógrafo", "onde": "Márcia Silva", "ponto": [0.269, 0.254], "ini": 104.0, "fim": 210.5, "falas": [{"quem": "Narradora", "texto": "A primeira reação na sala é de urgência. Mas nem todos concordam sobre o caminho a seguir.", "ini": 104.0, "fim": 110.533}, {"quem": "Narradora", "texto": "Ouça a seguir a conversa entre a diretora de saúde coletiva, Márcia Silva, e o assessor de planejamento, Rogério Prado.", "ini": 110.533, "fim": 118.733}, {"quem": "Márcia Silva", "texto": "Com CPI ou sem CPI, a verdade é que todos nós já imaginávamos que um dia isto poderia ocorrer.", "ini": 118.733, "fim": 125.267}, {"quem": "Márcia Silva", "texto": "Tem ficado cada vez mais difícil marcar as mamografias das nossas pacientes na macrorregião. Precisamos discutir como vamos resolver este problema, de forma urgente.", "ini": 125.267, "fim": 135.0}, {"quem": "Márcia Silva", "texto": "Precisamos de um mamógrafo aqui no município.", "ini": 135.0, "fim": 137.6}, {"quem": "Rogério Prado", "texto": "Precisamos olhar este problema com calma, apesar de toda sua gravidade.", "ini": 137.6, "fim": 142.2}, {"quem": "Rogério Prado", "texto": "Além do mais, sei que existe um projeto de instalação de um mamógrafo no município de São João da Boa Sorte, que fica a 30 quilômetros daqui.", "ini": 142.2, "fim": 150.167}, {"quem": "Rogério Prado", "texto": "Será que esses dois mamógrafos, um em cada cidade, não tendem a ficar ociosos?", "ini": 150.167, "fim": 155.3}, {"quem": "Rogério Prado", "texto": "Fala-se tanto em Rede de Serviços de Saúde, e agora que estamos diante deste grave problema, vamos ignorar este conceito tão importante para a concretização do SUS?", "ini": 155.3, "fim": 164.933}, {"quem": "Márcia Silva", "texto": "Quando você fala, parece que os problemas podem esperar que todos tomem consciência dos problemas e se organizem.", "ini": 164.933, "fim": 171.2}, {"quem": "Márcia Silva", "texto": "Enquanto isso, muitas mulheres, algumas muito jovens, morrerão de câncer de mama, por falta de assistência médica.", "ini": 171.2, "fim": 178.6}, {"quem": "Rogério Prado", "texto": "Não se trata disso. Somos um município dentro de uma microrregião, de uma macrorregião e dentro de um estado.", "ini": 178.6, "fim": 185.9}, {"quem": "Rogério Prado", "texto": "Será que temos que resolver estes problemas de forma solitária e desprezando o fato de que existe, ou deveria existir, uma rede de serviços de saúde, onde cada município e cada unidade de saúde cumpre um determinado papel?", "ini": 185.9, "fim": 199.3}, {"quem": "Rogério Prado", "texto": "E a SES, também não é responsável por resolver este problema?", "ini": 199.3, "fim": 203.667}, {"quem": "Rogério Prado", "texto": "Além disso, não podemos reduzir nosso debate à obtenção dos recursos necessários para a aquisição de um mamógrafo.", "ini": 203.667, "fim": 210.5}]}, {"titulo": "A rede de serviços de saúde", "onde": "A janela", "ponto": [0.807, 0.17], "ini": 210.5, "fim": 231.833, "falas": [{"quem": "Narradora", "texto": "Rogério chama atenção para o lugar de Nova Esperança na rede de serviços de saúde da região. Veja o que se sabe sobre cada ponto dessa rede.", "ini": 210.5, "fim": 219.833}]}, {"titulo": "Custos e a emenda parlamentar", "onde": "A calculadora", "ponto": [0.287, 0.657], "ini": 231.833, "fim": 270.167, "falas": [{"quem": "Narradora", "texto": "O debate ganha novos elementos.", "ini": 231.833, "fim": 234.533}, {"quem": "Narradora", "texto": "Jorge Menezes, diretor administrativo e financeiro, lembra que instalar um mamógrafo não se resume ao investimento: é preciso saber quem vai pagar os médicos, os enfermeiros e todo o custeio.", "ini": 234.533, "fim": 248.167}, {"quem": "Narradora", "texto": "Sandra Moura, chefe de gabinete, acrescenta que acaba de receber, do gabinete do deputado Maneco Silva, a cópia da emenda parlamentar com os recursos solicitados no ano anterior.", "ini": 248.167, "fim": 259.7}, {"quem": "Narradora", "texto": "Ao que tudo indica, as obras do Pronto Atendimento vão sair.", "ini": 259.7, "fim": 264.067}, {"quem": "Narradora", "texto": "Osvaldo reconhece:", "ini": 264.067, "fim": 266.033}, {"quem": "Osvaldo Ramos", "texto": "Todo mundo tem razão, mas precisamos sair deste atoleiro.", "ini": 266.033, "fim": 270.167}]}, {"titulo": "Quem cobra respostas", "onde": "O celular", "ponto": [0.792, 0.612], "ini": 270.167, "fim": 316.567, "falas": [{"quem": "Narradora", "texto": "E a pressão não vem apenas de dentro da Secretaria.", "ini": 270.167, "fim": 273.8}, {"quem": "Narradora", "texto": "No meio da discussão, o Prefeito chama Osvaldo, que pergunta à equipe o que deve dizer a ele.", "ini": 283.8, "fim": 290.067}, {"quem": "Narradora", "texto": "Sandra sugere uma resposta: dizer que a Secretaria está estudando a sustentabilidade da proposta de ampliação das ações do Programa de Controle do Câncer de Mama no município, incluindo a criação de um Polo Secundário de Mama.", "ini": 290.067, "fim": 303.867}, {"quem": "Narradora", "texto": "O termo “sustentabilidade” causa estranhamento em Márcia.", "ini": 303.867, "fim": 308.3}, {"quem": "Narradora", "texto": "Ouça a seguir a conversa entre Márcia, Rogério e Osvaldo sobre o que significa, afinal, uma proposta sustentável.", "ini": 308.3, "fim": 316.567}]}, {"titulo": "O que é sustentabilidade", "onde": "Rogério Prado", "ponto": [0.705, 0.254], "ini": 316.567, "fim": 379.433, "falas": [{"quem": "Márcia Silva", "texto": "De onde a senhora tirou esta palavra tão elaborada, sustentabilidade?", "ini": 316.567, "fim": 321.233}, {"quem": "Rogério Prado", "texto": "Ela não tirou de lugar nenhum. Não podemos apenas fazer propostas de aquisição de equipamentos, ainda que estas possam ser muito importantes para a população.", "ini": 321.233, "fim": 330.4}, {"quem": "Rogério Prado", "texto": "Precisamos saber se os indicadores demográficos e epidemiológicos justificam esta proposta.", "ini": 330.4, "fim": 336.2}, {"quem": "Rogério Prado", "texto": "Além disso, só ter acesso a mamografias não resolve, quem vai solicitá-las a tempo e a hora?", "ini": 336.2, "fim": 342.0}, {"quem": "Rogério Prado", "texto": "E mesmo que se consiga fazer os exames, como vamos garantir o tratamento em uma Unidade de Assistência de Alta Complexidade em Oncologia, a Unacon, ou em Centro de Assistência de Alta Complexidade em Oncologia, o Cacon, dos casos diagnosticados?", "ini": 342.0, "fim": 356.2}, {"quem": "Rogério Prado", "texto": "Temos que pensar na Linha de Cuidado do Câncer de Mama.", "ini": 356.2, "fim": 359.6}, {"quem": "Rogério Prado", "texto": "Por fim, devemos conhecer o custo do investimento e o custeio operacional para esta nova Unidade, o Polo Secundário de Mama. Sustentabilidade é tudo isto.", "ini": 359.6, "fim": 369.4}, {"quem": "Osvaldo Ramos", "texto": "Hum... Eu acho que o prefeito não vai gostar disto. Precisamos do Polo Secundário de Mama, mas não sabemos sequer se devemos e podemos criá-lo.", "ini": 369.4, "fim": 379.433}]}, {"titulo": "As questões levantadas", "onde": "Os papéis da mesa", "ponto": [0.574, 0.573], "ini": 379.433, "fim": 402.333, "falas": [{"quem": "Narradora", "texto": "Ao longo da reunião, a proposta de instalar um mamógrafo no município foi sendo questionada. Veja as questões levantadas pela equipe.", "ini": 379.433, "fim": 388.333}]}, {"titulo": "A ata e os encaminhamentos", "onde": "A pasta do secretário", "ponto": [0.494, 0.436], "ini": 402.333, "fim": 473.067, "falas": [{"quem": "Narradora", "texto": "Antes de encerrar, Osvaldo e Sandra distribuem tarefas para a próxima reunião. Os encaminhamentos foram registrados em ata.", "ini": 402.333, "fim": 410.467}, {"quem": "Narradora", "texto": "Os três técnicos da força-tarefa são os mesmos indicados para fazer o Curso de Planejamento de Projetos de Investimentos em Saúde.", "ini": 450.467, "fim": 458.967}, {"quem": "Narradora", "texto": "Ao longo do curso, você acompanhará o trabalho dessa equipe e, em paralelo, vai identificar, descrever e explicar um problema do seu próprio contexto, cuja intervenção construirá ao longo das unidades.", "ini": 458.967, "fim": 473.067}]}], "paradas": [{"em": 102.0, "titulo": "Trajetória de D. Maria Santinha"}, {"em": 229.833, "titulo": "Nova Esperança na rede de serviços de saúde"}, {"em": 282.8, "titulo": "Quem cobra respostas da Secretaria Municipal de Saúde"}, {"em": 400.333, "titulo": "Questões levantadas na reunião"}, {"em": 432.0, "titulo": "Ata da reunião (página 1 de 2)"}, {"em": 448.467, "titulo": "Ata da reunião (página 2 de 2)"}], "camadas": [{"id": "osvaldo", "x": 39.517, "y": 12.826, "w": 18.312, "h": 28.516}, {"id": "marcia", "x": 19.154, "y": 17.383, "w": 20.472, "h": 32.096}, {"id": "rogerio", "x": 57.755, "y": 17.48, "w": 25.508, "h": 35.091}, {"id": "jorge", "x": -0.385, "y": 31.771, "w": 36.385, "h": 68.229}, {"id": "sandra", "x": 62.315, "y": 33.594, "w": 38.088, "h": 57.52}]};
+const PAUSA = '<svg viewBox="0 0 10 12" aria-hidden="true"><rect x="0.5" y="0" width="3.2" height="12" rx="0.8"/><rect x="6.3" y="0" width="3.2" height="12" rx="0.8"/></svg>';
+const CHAVE = 'ppis-ua1-cena1-posicao';
+
+const $ = id => document.getElementById(id);
+const player = $('player'), filme = $('filme'), trilho = $('trilho'), dica = $('dica');
+const leitura = $('leitura'), trans = $('transcricao'), autoPausa = $('auto-pausa');
+const D = DADOS.duracao;
+const fmt = s => { s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const capEm = t => Math.max(0, DADOS.capitulos.findIndex(c => t >= c.ini - 0.01 && t < c.fim - 0.01));
+
+// segmented timeline: one segment per part, reading marks on top
+const segs = DADOS.capitulos.map((c, i) => {
+  const s = document.createElement('div');
+  s.className = 'seg'; s.style.flex = String(c.fim - c.ini); s.innerHTML = '<i></i>';
+  trilho.appendChild(s);
+  return s;
+});
+// a stop mark is a button: it takes the learner straight to that reading, paused
+const marcas = DADOS.paradas.map(p => {
+  const m = document.createElement('button');
+  m.className = 'marca'; m.innerHTML = PAUSA;
+  m.setAttribute('aria-label', 'Leitura: ' + p.titulo);
+  m.onclick = e => { e.stopPropagation(); $('inicio').style.display = 'none'; abrirLeitura(p); };
+  m.onmousemove = e => {
+    e.stopPropagation();
+    const r = trilho.getBoundingClientRect();
+    dica.innerHTML = `${p.titulo}<small>${fmt(p.em)} · leitura</small>`;
+    dica.style.display = 'block';
+    dica.style.left = Math.min(r.width - dica.offsetWidth / 2, Math.max(dica.offsetWidth / 2, e.clientX - r.left)) + 'px';
+  };
+  trilho.appendChild(m);
+  return m;
+});
+function posicionarMarcas() {
+  // a mark sits at its stop time inside its part's segment (segments are separated by 3 px gaps)
+  const r = trilho.getBoundingClientRect();
+  DADOS.paradas.forEach((p, k) => {
+    const s = segs[capEm(p.em)], rs = s.getBoundingClientRect(), c = DADOS.capitulos[capEm(p.em)];
+    marcas[k].style.left = (rs.left - r.left + rs.width * (p.em - c.ini) / (c.fim - c.ini)) + 'px';
+  });
+}
+function tempoNoTrilho(x) {
+  for (let i = 0; i < segs.length; i++) {
+    const rs = segs[i].getBoundingClientRect();
+    if (x <= rs.right + 1.5 || i === segs.length - 1) {
+      const c = DADOS.capitulos[i], k = Math.min(1, Math.max(0, (x - rs.left) / rs.width));
+      return { t: c.ini + k * (c.fim - c.ini), i };
+    }
+  }
+}
+trilho.addEventListener('mousemove', e => {
+  const { t, i } = tempoNoTrilho(e.clientX), r = trilho.getBoundingClientRect();
+  const parada = DADOS.paradas.find(p => capEm(p.em) === i);
+  dica.innerHTML = `${i + 1}. ${DADOS.capitulos[i].titulo}<small>${fmt(t)}${parada ? ' · tem pausa para leitura' : ''}</small>`;
+  dica.style.display = 'block';
+  dica.style.left = Math.min(r.width - dica.offsetWidth / 2, Math.max(dica.offsetWidth / 2, e.clientX - r.left)) + 'px';
+});
+trilho.addEventListener('mouseleave', () => dica.style.display = 'none');
+trilho.addEventListener('click', e => { ir(tempoNoTrilho(e.clientX).t); });
+
+let ultimo = 0, emLeitura = null;
+function ir(t) { fecharLeitura(); filme.currentTime = t; ultimo = t; if (filme.paused) filme.play(); }
+
+function abrirLeitura(p) {
+  emLeitura = p;
+  filme.pause();
+  filme.currentTime = p.em;
+  player.classList.add('oculto');
+  leitura.classList.add('on');
+  $('continuar').focus();
+}
+function fecharLeitura() { emLeitura = null; leitura.classList.remove('on'); }
+$('continuar').onclick = () => { const p = emLeitura; fecharLeitura(); ultimo = p ? p.em + 0.05 : filme.currentTime; filme.play(); };
+
+function transcricao(i) {
+  if (trans.dataset.cap === String(i)) return;
+  const c = DADOS.capitulos[i];
+  trans.dataset.cap = i;
+  trans.innerHTML = `<h2>${i + 1}. ${c.titulo}</h2>` + c.falas.map(f => `<p data-ini="${f.ini}" data-fim="${f.fim}"><b>${f.quem}</b>${f.texto}</p>`).join('');
+  trans.querySelectorAll('p').forEach(p => p.onclick = () => ir(+p.dataset.ini));
+}
+
+filme.addEventListener('timeupdate', () => {
+  const t = filme.currentTime;
+  // a reading stop fires only when playback runs into it, never on a jump past it
+  if (!filme.paused && autoPausa.checked && !emLeitura) {
+    const p = DADOS.paradas.find(p => ultimo < p.em && t >= p.em && t - ultimo < 1.5);
+    if (p) { ultimo = t; abrirLeitura(p); return; }
+  }
+  ultimo = t;
+  const i = capEm(t);
+  segs.forEach((s, k) => {
+    const c = DADOS.capitulos[k];
+    s.querySelector('i').style.width = Math.min(100, Math.max(0, (t - c.ini) / (c.fim - c.ini) * 100)) + '%';
+    s.classList.toggle('atual', k === i);
+  });
+  $('tempo').textContent = `${fmt(t)} / ${fmt(D)}`;
+  $('cap').textContent = `${i + 1}. ${DADOS.capitulos[i].titulo}`;
+  transcricao(i);
+  trans.querySelectorAll('p').forEach(p => p.classList.toggle('agora', t >= +p.dataset.ini && t < +p.dataset.fim));
+  if (Math.floor(t) % 2 === 0) localStorage.setItem(CHAVE, String(t));
+});
+filme.addEventListener('seeking', () => { ultimo = filme.currentTime; });
+filme.addEventListener('play', () => { $('tocar').textContent = '❚❚'; $('inicio').style.display = 'none'; });
+filme.addEventListener('pause', () => { $('tocar').textContent = '▶'; if (!emLeitura) { player.classList.remove('oculto'); clearTimeout(parado); } });
+filme.addEventListener('ended', () => localStorage.removeItem(CHAVE));
+
+$('tocar').onclick = () => { if (emLeitura) $('continuar').click(); else filme.paused ? filme.play() : filme.pause(); };
+filme.onclick = () => $('tocar').click();
+$('btn-trans').onclick = () => trans.classList.toggle('aberta');
+$('tela').onclick = () => document.fullscreenElement ? document.exitFullscreen() : player.requestFullscreen();
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'k') { e.preventDefault(); $('tocar').click(); }
+  if (e.key === 'ArrowRight') ir(Math.min(D, filme.currentTime + 5));
+  if (e.key === 'ArrowLeft') ir(Math.max(0, filme.currentTime - 5));
+});
+
+// the bar hides itself while playing and the mouse is still
+let parado;
+player.addEventListener('mousemove', () => { player.classList.remove('oculto'); clearTimeout(parado); parado = setTimeout(() => { if (!filme.paused || emLeitura) player.classList.add('oculto'); }, 2500); });
+
+// start screen: resume where the learner stopped, or start over
+const salvo = +localStorage.getItem(CHAVE) || 0;
+const bi = $('botoes-inicio');
+function botao(html, forte, t) { const b = document.createElement('button'); b.className = 'grande' + (forte ? ' forte' : ''); b.innerHTML = html; b.onclick = () => ir(t); bi.appendChild(b); }
+const PLAY = '<svg class="ico" viewBox="0 0 12 14" aria-hidden="true"><path d="M1 1l10 6-10 6z"/></svg>';
+if (salvo > 5 && salvo < D - 5) { botao(`${PLAY}Continuar de onde parei (${fmt(salvo)})`, true, salvo); botao('Começar do início', false, 0); }
+else botao(`${PLAY}Assistir`, true, 0);
+
+window.addEventListener('resize', posicionarMarcas);
+document.addEventListener('fullscreenchange', () => setTimeout(posicionarMarcas, 50));
+posicionarMarcas();
+</script>
+</body>
+</html>
